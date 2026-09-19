@@ -2,6 +2,8 @@
 
 一组面向代码注释的 Codex skills，默认只修改注释和文档标记，不改变业务逻辑、公共 API、字符串或错误处理。四个 skill 可以单独使用，也可以使用综合入口按固定顺序完成完整处理。
 
+支持语言：C、C++、Python、JavaScript、TypeScript、Java、Go、Rust、C#。
+
 ## 四个 skill
 
 | Skill | 作用 | 显式调用命令 |
@@ -22,11 +24,10 @@ chinese-code-comment-skill/
 |-- SKILL.md                                      # 综合 skill
 |-- skills/
 |   |-- chinese-code-comment-translate/SKILL.md   # 注释翻译
-|   |-- chinese-code-comment-enrich/SKILL.md      # why 注释增强
+|   |-- chinese-code-comment-enrich/
+|   |   |-- SKILL.md                              # why 注释增强
+|   |   `-- references/multilingual-examples.md   # 增强 skill 示例
 |   `-- chinese-code-comment-style/SKILL.md        # 编程规范整理
-|-- references/multilingual-examples.md           # 综合 skill 示例
-`-- skills/chinese-code-comment-enrich/references/
-    `-- multilingual-examples.md                  # 增强 skill 示例
 ```
 
 ## 给 Codex 安装
@@ -88,7 +89,7 @@ python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path 
 - 翻译入口：[skills/chinese-code-comment-translate/SKILL.md](skills/chinese-code-comment-translate/SKILL.md)
 - 注释增强入口：[skills/chinese-code-comment-enrich/SKILL.md](skills/chinese-code-comment-enrich/SKILL.md)
 - 规范整理入口：[skills/chinese-code-comment-style/SKILL.md](skills/chinese-code-comment-style/SKILL.md)
-- 多语言示例：[references/multilingual-examples.md](references/multilingual-examples.md)
+- 多语言示例：[skills/chinese-code-comment-enrich/references/multilingual-examples.md](skills/chinese-code-comment-enrich/references/multilingual-examples.md)
 
 综合 skill 必须按翻译 → 增强 → 规范的顺序执行；只需要其中一项时，直接调用对应子 skill，避免扩大修改范围。
 

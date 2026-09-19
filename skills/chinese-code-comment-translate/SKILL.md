@@ -17,6 +17,10 @@ metadata:
 - 混合语言注释只翻译其中的非中文自然语言，已有中文和必要英文术语继续保留。
 - 跳过生成文件、依赖目录、压缩文件和二进制文件，除非用户明确指定。
 
+## 支持语言
+
+支持以下语言的行注释、块注释、docstring、JSDoc、Javadoc、Doxygen、Go doc、Rust doc 及 XML 文档：C、C++、Python、JavaScript、TypeScript、Java、Go、Rust、C#。混合语言目录按每个文件的实际语法分别处理。
+
 ## 工作流程
 
 1. **先检查 Context7 MCP**：查看当前 Codex 会话是否有可用的 Context7。若目标注释包含版本敏感的库、框架或 API 术语，优先查询匹配版本的权威文档确认术语含义；不可用时回退到仓库源码、锁文件和项目词汇，不要阻塞翻译。

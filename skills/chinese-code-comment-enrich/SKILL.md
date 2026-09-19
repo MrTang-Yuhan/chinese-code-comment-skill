@@ -15,6 +15,10 @@ metadata:
 
 仓库地址：<https://github.com/MrTang-Yuhan/chinese-code-comment-skill>
 
+## 支持语言
+
+本 skill 支持以下语言：C、C++、Python、JavaScript、TypeScript、Java、Go、Rust、C#。处理混合语言目录时，按每个文件的语言版本、注释语法、文档工具和项目约定分别建立覆盖清单；不能把一种语言的装饰器、注解或文档标签语义套用到另一种语言。
+
 ## Why 优先
 
 每条有信息量的注释都应优先回答 **为什么存在、为什么这样写、违反它会怎样**，再补充必要的“做什么”和“怎么做”。不要把代码逐字翻译成中文：
