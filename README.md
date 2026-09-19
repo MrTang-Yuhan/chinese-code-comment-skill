@@ -1,116 +1,108 @@
 # chinese-code-comment-skill
 
-为代码补充面向初学者、以 **why** 为核心的中文注释。它要求 AI 智能体覆盖类型、每个成员/结构体字段、函数和构造器的每个参数、函数契约、`if`/`for`/`while` 等控制流块，以及模板、生命周期、异步、并发等不常见语法，并保持代码逻辑不变。
+一组面向代码注释的 Codex skills，默认只修改注释和文档标记，不改变业务逻辑、公共 API、字符串或错误处理。四个 skill 可以单独使用，也可以使用综合入口按固定顺序完成完整处理。
 
-## 仓库内容
+## 四个 skill
+
+| Skill | 作用 | 显式调用命令 |
+| --- | --- | --- |
+| 翻译 | 将已有英文或其他语言的注释翻译成中文，不新增解释 | `chinese-code-comment-translate` |
+| 注释增强 | 按 why 优先规范补充类型、成员、参数、复杂语法和每条控制流路径 | `chinese-code-comment-enrich` |
+| 规范整理 | 让注释符合目标语言、项目配置、formatter/linter 和文档工具规范 | `chinese-code-comment-style` |
+| 综合处理 | 依次调用翻译 → 注释增强 → 规范整理 | `chinese-code-comment-skill` |
+
+四个入口都会在开始时检查当前 Codex 会话是否有 Context7 MCP；涉及版本敏感的第三方库、框架或 API 时，优先用 Context7 核对相关文档。
+
+在支持 `$skill-name` 显式语法的客户端中，调用形式分别是 `$chinese-code-comment-translate`、`$chinese-code-comment-enrich`、`$chinese-code-comment-style` 和 `$chinese-code-comment-skill`；也可以在自然语言提示中写出完整 skill 名称。
+
+## 仓库结构
 
 ```text
 chinese-code-comment-skill/
-|-- SKILL.md                              # Codex skill 主入口
-`-- references/multilingual-examples.md   # 多语言详尽注释示例
+|-- SKILL.md                                      # 综合 skill
+|-- skills/
+|   |-- chinese-code-comment-translate/SKILL.md   # 注释翻译
+|   |-- chinese-code-comment-enrich/SKILL.md      # why 注释增强
+|   `-- chinese-code-comment-style/SKILL.md        # 编程规范整理
+|-- references/multilingual-examples.md           # 综合 skill 示例
+`-- skills/chinese-code-comment-enrich/references/
+    `-- multilingual-examples.md                  # 增强 skill 示例
 ```
 
 ## 给 Codex 安装
 
-### 默认目录
+使用 Codex 内置安装脚本分别安装四个入口。以下命令假定目标目录中还没有同名 skill：
 
 ```bash
-git clone https://github.com/MrTang-Yuhan/chinese-code-comment-skill.git ~/.codex/skills/chinese-code-comment-skill
+SKILL_INSTALLER=/home/tang/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py
+python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path . --name chinese-code-comment-skill
+python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path skills/chinese-code-comment-translate
+python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path skills/chinese-code-comment-enrich
+python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path skills/chinese-code-comment-style
 ```
 
-如果设置了 `CODEX_HOME`，安装到该目录下的 `skills`：
-
-```bash
-git clone https://github.com/MrTang-Yuhan/chinese-code-comment-skill.git "$CODEX_HOME/skills/chinese-code-comment-skill"
-```
-
-安装后应满足以下结构：
+安装后应满足：
 
 ```text
 <skills-directory>/chinese-code-comment-skill/SKILL.md
-<skills-directory>/chinese-code-comment-skill/references/multilingual-examples.md
+<skills-directory>/chinese-code-comment-translate/SKILL.md
+<skills-directory>/chinese-code-comment-enrich/SKILL.md
+<skills-directory>/chinese-code-comment-enrich/references/multilingual-examples.md
+<skills-directory>/chinese-code-comment-style/SKILL.md
 ```
 
-也可以在 GitHub 页面下载 ZIP，解压后把仓库根目录放到上述位置；或直接下载 Raw 文件：
+也可以从 GitHub 下载后，把四个包含 `SKILL.md` 的目录分别注册到工具的 skill 目录；不要只注册 README，也不要把四个目录再套一层同名目录。
 
-<https://raw.githubusercontent.com/MrTang-Yuhan/chinese-code-comment-skill/main/SKILL.md>
+完成安装或更新后刷新 skill 索引或重新开始 Codex 会话。当前已安装目录存在时，安装脚本会拒绝覆盖；更新时应在保留本地修改的前提下重新复制对应目录，或按工具提供的 skill 更新流程执行。
 
-只下载 `SKILL.md` 时，若需要多语言样例，还要同时下载 `references/multilingual-examples.md`，并保持相对目录结构。
+## 调用示例
 
-### 验证和刷新
-
-确认入口文件存在并检查 frontmatter：
-
-```bash
-test -f ~/.codex/skills/chinese-code-comment-skill/SKILL.md
-sed -n '1,8p' ~/.codex/skills/chinese-code-comment-skill/SKILL.md
-```
-
-如果安装在 `CODEX_HOME`，把命令中的默认路径替换为：
-
-```bash
-test -f "$CODEX_HOME/skills/chinese-code-comment-skill/SKILL.md"
-sed -n '1,8p' "$CODEX_HOME/skills/chinese-code-comment-skill/SKILL.md"
-```
-
-完成安装或更新后，刷新 Codex 的 skill 索引；如果当前会话没有刷新入口，重新开始一个 Codex 会话。显式调用名称为 `chinese-code-comment-skill`。
-
-更新已克隆的 skill：
-
-```bash
-git -C ~/.codex/skills/chinese-code-comment-skill pull --ff-only
-```
-
-使用 `CODEX_HOME` 时：
-
-```bash
-git -C "$CODEX_HOME/skills/chinese-code-comment-skill" pull --ff-only
-```
-
-## 给其他 AI 智能体安装
-
-1. 使用仓库地址、ZIP 或 Raw URL 下载文件。
-2. 把包含 `SKILL.md` 的目录注册为该工具的 skill、agent instruction 或 system prompt 资源；不要只把 README 当作技能指令。
-3. 加载完整的 `SKILL.md`。处理某种语言时，再按文档链接加载 `references/multilingual-examples.md`。
-4. 刷新工具索引或重新开始 agent 会话。
-5. 在任务提示中明确目标文件、语言/版本、只改注释的范围和是否允许修改业务逻辑。
-
-推荐的调用提示：
+### 只翻译
 
 ```text
-请使用 chinese-code-comment-skill，为 src/ 目录中的 C++ 代码补充面向初学者的中文注释。只修改注释，不改变代码逻辑。
+请使用 chinese-code-comment-translate，把 src/legacy.py 中已有英文注释和 docstring 翻译成中文。
+不要新增注释，也不要翻译函数名、API 名称、字符串字面量或代码示例，只修改注释文本。
 ```
 
-如果工具支持显式 URL 来源，可使用：
+### 只增强
 
 ```text
-https://github.com/MrTang-Yuhan/chinese-code-comment-skill
+请使用 chinese-code-comment-enrich，为 src/queue.cpp 按 why 规范补充中文注释，逐一覆盖 class 成员、struct 字段、构造器参数以及每个分支、循环退出和异常路径。
 ```
 
-如果工具只接受单文件，则使用：
+### 只整理规范
 
 ```text
-https://raw.githubusercontent.com/MrTang-Yuhan/chinese-code-comment-skill/main/SKILL.md
+请使用 chinese-code-comment-style，检查 src/api.ts 的 JSDoc 是否符合项目 TypeScript 规范，修正标签、位置、换行和参数名，但保留注释含义，不改业务代码。
 ```
 
-但单文件模式无法自动获得多语言参考，需另行提供 `references/multilingual-examples.md`。
+### 完整处理
+
+```text
+请使用 chinese-code-comment-skill，处理 src/ 目录中的 Python 和 C++ 文件：先把现有英文注释翻译成中文，再按 why 规范补齐每个类型、成员、函数参数、复杂语法和每个 if/else/for/while 路径的注释，最后按项目的注释规范整理格式。只改注释，不改变代码逻辑。
+```
+
+## 原始 skill 内容
+
+- 综合入口：[SKILL.md](SKILL.md)
+- 翻译入口：[skills/chinese-code-comment-translate/SKILL.md](skills/chinese-code-comment-translate/SKILL.md)
+- 注释增强入口：[skills/chinese-code-comment-enrich/SKILL.md](skills/chinese-code-comment-enrich/SKILL.md)
+- 规范整理入口：[skills/chinese-code-comment-style/SKILL.md](skills/chinese-code-comment-style/SKILL.md)
+- 多语言示例：[references/multilingual-examples.md](references/multilingual-examples.md)
+
+综合 skill 必须按翻译 → 增强 → 规范的顺序执行；只需要其中一项时，直接调用对应子 skill，避免扩大修改范围。
 
 ## 开发和校验
 
-修改 skill 后，可使用 Codex 内置 skill-creator 校验脚本：
+修改 skill 后，分别运行校验脚本：
 
 ```bash
-python /home/tang/.codex/skills/.system/skill-creator/scripts/quick_validate.py .
+VALIDATOR=/home/tang/.codex/skills/.system/skill-creator/scripts/quick_validate.py
+python "$VALIDATOR" .
+python "$VALIDATOR" skills/chinese-code-comment-translate
+python "$VALIDATOR" skills/chinese-code-comment-enrich
+python "$VALIDATOR" skills/chinese-code-comment-style
+git diff --check
 ```
 
-该脚本检查 frontmatter、技能名称和基础结构；示例代码仍应按目标语言的格式化器、编译器或静态检查工具验证。
-
-## 重要约束
-
-- 注释以“为什么这样写、有什么约束、不这样写会怎样”为重点，不机械翻译代码。
-- C/C++ 的结构体、类和联合体成员必须逐一注释，不能只注释类型整体。
-- 函数和构造器的每个参数必须逐一解释用途、why、边界/默认值、可空性、所有权或副作用；参数名和数量要与实际签名一致。
-- Python 的每个装饰器（包括参数化、堆叠、`@property`、`@classmethod`、`@staticmethod`）都要说明定义期/调用期行为、包装关系、顺序、元数据和副作用 why；其他语言的注解/Attribute/属性也要注明其真实生效时机。
-- 每个控制流块和嵌套分支都要说明进入原因、处理目标及后续影响。
-- 默认只修改注释，不重构或修复业务逻辑。
-- 本地新增内容需要提交并推送后，GitHub 页面和 Raw URL 才会提供最新版本。
+修改后应按目标语言的 formatter、编译器、静态检查、文档生成器或测试继续验证。提交并推送后，GitHub 页面和 Raw URL 才会提供最新版本。
