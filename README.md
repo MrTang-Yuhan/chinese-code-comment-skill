@@ -78,9 +78,7 @@ git -C "$CODEX_HOME/skills/chinese-code-comment-skill" pull --ff-only
 推荐的调用提示：
 
 ```text
-请使用 chinese-code-comment-skill，为 src/ 目录中的 C++ 代码补充面向初学者的中文注释。
-请逐一解释每个 class/struct/union 成员、每个函数及其每个参数、每个 if/for/while 代码块，
-并重点说明为什么使用 RAII、移动语义和模板；只修改注释，不改变代码逻辑。
+请使用 chinese-code-comment-skill，为 src/ 目录中的 C++ 代码补充面向初学者的中文注释。只修改注释，不改变代码逻辑。
 ```
 
 如果工具支持显式 URL 来源，可使用：
