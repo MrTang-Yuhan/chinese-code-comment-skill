@@ -9,7 +9,7 @@
 | Skill | 作用 | 显式调用命令 |
 | --- | --- | --- |
 | 翻译 | 将已有英文或其他语言的注释翻译成中文，不新增解释 | `chinese-code-comment-translate` |
-| 注释增强 | 按 why 优先规范补充类型、成员、参数、复杂语法和每条控制流路径 | `chinese-code-comment-enrich` |
+| 注释增强 | 按 why 优先规范补充类型、成员、参数、复杂语法和每条控制流路径；覆盖 PyTorch 张量维度变化 | `chinese-code-comment-enrich` |
 | 规范整理 | 让注释符合目标语言、项目配置、formatter/linter 和文档工具规范 | `chinese-code-comment-style` |
 | 综合处理 | 依次调用翻译 → 注释增强 → 规范整理 | `chinese-code-comment-skill` |
 
@@ -80,7 +80,7 @@ python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path 
 ### 完整处理
 
 ```text
-请使用 chinese-code-comment-skill，处理 src/ 目录中的 Python 和 C++ 文件：先把现有英文注释翻译成中文，再按 why 规范补齐每个类型、成员、函数参数、复杂语法和每个 if/else/for/while 路径的注释，最后按项目的注释规范整理格式。只改注释，不改变代码逻辑。
+请使用 chinese-code-comment-skill，处理 src/ 目录中的 Python 和 C++ 文件：先把现有英文注释翻译成中文，再按 why 规范补齐每个类型、成员、函数参数、复杂语法和每个 if/else/for/while 路径的注释；如果有 PyTorch 代码，也标注所有张量操作的维度变化和形状不变关系，并在每个函数开头声明统一符号。最后按项目的注释规范整理格式。只改注释，不改变代码逻辑。
 ```
 
 ## 原始 skill 内容

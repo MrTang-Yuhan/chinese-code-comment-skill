@@ -86,6 +86,34 @@ def audit_scope(audit_log: list[str], action: str) -> Iterator[None]:
 
 要点：类属性和 `__init__` 参数逐一说明用途、边界及 why；函数的 `age`/`region`、上下文管理器的 `audit_log`/`action` 也都有参数契约。两个 `if` 块分别说明为什么进入、为什么早退；`@contextmanager`、`yield` 和 `try/finally` 解释了资源/审计收尾为什么可靠。
 
+### PyTorch 张量形状专项示例
+
+```python
+from torch import Tensor, nn
+
+
+def project_qkv(x: Tensor, projection: nn.Linear, dropout: nn.Dropout) -> Tensor:
+    """
+    将每个 token 的特征投影为 query、key、value 三组特征。
+
+    Args:
+        x: 输入序列特征，形状为 [B, L, D]；D 必须与 projection 的输入特征数一致。
+        projection: 把末维从 D 映射到 3D 的线性层；三段等宽输出供 Q/K/V 使用。
+        dropout: 对投影结果执行训练期随机失活的模块；失活不会改变张量形状。
+    Returns:
+        Q/K/V 堆叠张量，形状为 [3, B, L, D]；首维索引依次对应 query、key、value。
+    """
+    # B: 批大小，L: 序列长度，D: 特征维度
+    B, L, D = x.shape
+
+    # [B, L, D] -> [B, L, 3D] -> [B, L, 3, D] -> [3, B, L, D]
+    qkv = projection(x).reshape(B, L, 3, D).permute(2, 0, 1, 3)
+    qkv = dropout(qkv)  # [3, B, L, D] -> [3, B, L, D]（形状不变）
+    return qkv
+```
+
+要点：函数符号块在 docstring 后、可执行语句前声明；长形状链放在语句上方，短的形状保持说明放在行尾。注释只陈述有依据的形状，不把具体 batch/序列长度写死，也不把 `D` 改作其他含义。
+
 ### Python 装饰器专项示例
 
 ```python
