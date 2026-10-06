@@ -552,6 +552,56 @@ private:
     std::vector<RequestContext> pending_;  // 待处理请求；vector 便于移动元素，配合 back/pop_back 实现 LIFO。
 };
 
+// 普通非模板成员函数示例；Operation、地址类型及操作数编码等符号由业务项目提供。
+/**
+ * 将指令中使用的统一操作数编号翻译为 Tensor 的 DRAM 基地址。
+ *
+ * 该成员函数通过隐式 this 读取 _inputs 和 _outputs，并调用对应的访问器；
+ * 它只查询已有操作数，不转移 Operation 的所有权，也不改变输入/输出容器。
+ *
+ * @param operand_id 统一操作数编号，类型为 uint32_t，函数不会修改它；编码约定（见 Operation.h）：
+ *                   - _NO_OPERAND (0)：无操作数；
+ *                   - [_INPUT_OPERAND, _OUTPUT_OPERAND)：第
+ *                     (operand_id - _INPUT_OPERAND) 个输入；
+ *                   - [_OUTPUT_OPERAND, ...)：第
+ *                     (operand_id - _OUTPUT_OPERAND) 个输出。
+ *                   编号落在 1 到 _INPUT_OPERAND - 1 的未定义区间时视为非法；
+ *                   合法区间内但序号超出实际容器长度时，表示可选操作数缺失。
+ * @return 操作数对应 Tensor 的 DRAM 基地址；
+ *         operand_id 为 _NO_OPERAND 时返回哨兵地址 GARBEGE_ADDR；
+ *         非法编号会触发断言，禁用断言时返回 GARBEGE_ADDR；
+ *         序号越界（对应输入/输出不存在，如 GEMM 无 bias）时返回 0，
+ *         由调用方自行跳过该操作数。
+ */
+addr_type Operation::get_operand_addr(uint32_t operand_id) {
+    // 无操作数：返回哨兵地址，该地址不会被真正访问，调用方可据此识别“没有操作数”。
+    if (operand_id == _NO_OPERAND)
+        return GARBEGE_ADDR;
+    // 输入操作数：编号区间 [100, 200)，减去起始编号即可得到 _inputs 下标。
+    else if (operand_id >= _INPUT_OPERAND && operand_id < _OUTPUT_OPERAND) {
+        // 可选输入缺失（如 GEMM 无 bias 时第三个输入不存在）返回 0，让调用方跳过它。
+        // 先比较解码后的下标与容器长度，避免访问不存在的输入；(addr_type) 0 表示返回地址类型的零值。
+        if ((operand_id - _INPUT_OPERAND) >= _inputs.size())
+            return (addr_type) 0;
+
+        // 下标有效时，通过 -> 调用已有输入对象的地址访问器，供调用方定位对应 Tensor。
+        return get_input(operand_id - _INPUT_OPERAND)->get_address();
+    } else if (operand_id >= _OUTPUT_OPERAND) {
+        // 输出操作数：编号区间 [200, ...)，减去起始编号即可得到 _outputs 下标。
+        // 输出序号超出实际输出个数时同样返回 0，避免把缺失输出误当成可访问地址。
+        if ((operand_id - _OUTPUT_OPERAND) >= _outputs.size())
+            return (addr_type) 0;
+
+        // 与输入路径相同：通过指针访问器取得已有输出 Tensor 的 DRAM 基地址。
+        return get_output(operand_id - _OUTPUT_OPERAND)->get_address();
+    } else {
+        // 1 到 99 是未定义编号区间；断言用于在开发期尽早暴露编码错误。
+        assert(0);
+        // 即使发布构建禁用了断言，也保留哨兵返回，避免把非法编号当成真实地址继续传播。
+        return GARBEGE_ADDR;
+    }
+}
+
 /**
  * 根据 T 的类型在编译期选择日志格式。
  * if constexpr 会丢弃不满足条件的分支，因此不会要求 T 同时支持整数和字符串操作；
@@ -583,7 +633,7 @@ std::unique_ptr<T> clone(T value) {
 }
 ```
 
-要点：`Config`、`RequestContext` 和嵌套 `Metrics` 都有类型级职责说明；每个字段和 `submit`/`log_value`/`clone` 的显式参数（含 `T`）都有独立契约，包含单位、不变量、所有权或移动后的影响。`while`、两个 `if`、`continue` 和 `return` 解释了 LIFO 队列策略；RAII、移动语义、位域、`if constexpr`、`std::unique_ptr` 和 `std::move` 都解释了机制与替代方案的后果。
+要点：`Config`、`RequestContext` 和嵌套 `Metrics` 都有类型级职责说明；每个字段和 `submit`/`get_operand_addr`/`log_value`/`clone` 的显式参数（含 `T`）都有独立契约，包含单位、不变量、所有权或移动后的影响。`while`、`get_operand_addr` 中的区间分支、两个 `if`、`continue` 和 `return` 解释了 LIFO 队列及操作数编号解码策略；RAII、移动语义、位域、指针访问、断言、`if constexpr`、`std::unique_ptr` 和 `std::move` 都解释了机制与替代方案的后果。
 
 ## Go
 
