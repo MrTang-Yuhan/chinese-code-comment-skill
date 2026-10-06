@@ -23,8 +23,8 @@ Harness Agent 收到本仓库链接和“安装这个 skill”的请求时，请
 
 ```text
 chinese-code-comment-skill/
-|-- SKILL.md                                      # 综合 skill
 |-- skills/
+|   |-- chinese-code-comment-skill/SKILL.md       # 综合 skill
 |   |-- chinese-code-comment-translate/SKILL.md   # 注释翻译
 |   |-- chinese-code-comment-enrich/
 |   |   |-- SKILL.md                              # why 注释增强
@@ -38,13 +38,13 @@ chinese-code-comment-skill/
 
 按以下流程执行：
 
-1. **读取并识别入口**：读取仓库根目录的 `README.md`、`SKILL.md`，检查 `skills/*/SKILL.md`，识别四个可独立发现的入口：根目录 `SKILL.md` 对应 `chinese-code-comment-skill`，以及 `skills/chinese-code-comment-translate/SKILL.md`、`skills/chinese-code-comment-enrich/SKILL.md`、`skills/chinese-code-comment-style/SKILL.md` 对应的三个子入口。默认安装四个入口；只有用户明确指定某个入口时才缩小范围。`chinese-code-comment-enrich/references/multilingual-examples.md` 是增强入口必须保留的资源。
+1. **读取并识别入口**：读取仓库根目录的 `README.md`，检查 `skills/*/SKILL.md`，识别四个可独立发现的入口：`skills/chinese-code-comment-skill/SKILL.md` 对应综合入口，以及同级的 `skills/chinese-code-comment-translate/SKILL.md`、`skills/chinese-code-comment-enrich/SKILL.md`、`skills/chinese-code-comment-style/SKILL.md` 三个子入口。默认安装四个入口；只有用户明确指定某个入口时才缩小范围。`chinese-code-comment-enrich/references/multilingual-examples.md` 是增强入口必须保留的资源。
 2. **检查当前 Harness**：识别当前 Harness 的官方 skill/plugin 安装器、默认作用域、已安装目录和同名条目。优先使用 Harness 原生安装流程；不要同时通过插件和手工复制重复安装，也不要把 README 注册成 skill。若安装器支持 dry-run，先检查目标路径和冲突。
-3. **执行安装**：按 Harness 默认作用域安装四个入口；用户明确指定项目级或用户级时遵循用户指定作用域。每个目标目录必须直接包含对应的 `SKILL.md`，并保留入口目录中的相对资源；不要把四个入口套进一个额外的仓库目录。Claude Code 使用其当前版本支持的 skills 路径（项目级通常为 `.claude/skills/<skill-name>/`，用户级通常为 `~/.claude/skills/<skill-name>/`）；本仓库没有 `.claude-plugin/plugin.json`，不应按插件 manifest 安装。
+3. **执行安装**：按 Harness 默认作用域安装四个入口；用户明确指定项目级或用户级时遵循用户指定作用域。四个入口都位于 `skills/` 下的同级目录，必须分别安装到 `<skills-directory>/<skill-name>/`，每个目标目录直接包含对应的 `SKILL.md`，并保留入口目录中的相对资源。不要安装仓库根目录，也不要把四个入口套进一个额外的仓库目录；这样可以避免递归扫描时把一个入口的嵌套 `SKILL.md` 重复注册。Claude Code 使用其当前版本支持的 skills 路径（项目级通常为 `.claude/skills/<skill-name>/`，用户级通常为 `~/.claude/skills/<skill-name>/`）；本仓库没有 `.claude-plugin/plugin.json`，不应按插件 manifest 安装。
 4. **处理冲突**：不要覆盖已有本地修改。目标已存在时，按 Harness 的安全更新流程比较、跳过或更新，并记录冲突；不能安全处理时保留现状并向用户报告。
 5. **验证并反馈**：刷新 skill 索引或重新启动会话，实际验证四个名称都可发现和调用；向用户报告使用的安装方式、实际目标路径、已安装入口和未完成项。
 
-当 Harness 原生安装器不可用而支持 [Skills CLI](https://github.com/vercel-labs/skills) 时，Agent 可以自动执行下面的回退命令；当前 Harness 为 Claude Code 时把 `--agent codex` 改为 `--agent claude-code`，仓库链接指向 fork 时替换仓库地址，并按目标作用域增加或去掉 `--global`。由于仓库根目录已有 `SKILL.md`，`--full-depth` 用于继续发现三个子入口。首次运行需要 Node.js 和网络访问：
+当 Harness 原生安装器不可用而支持 [Skills CLI](https://github.com/vercel-labs/skills) 时，Agent 可以自动执行下面的回退命令；当前 Harness 为 Claude Code 时把 `--agent codex` 改为 `--agent claude-code`，仓库链接指向 fork 时替换仓库地址，并按目标作用域增加或去掉 `--global`。四个入口位于 `skills/` 下的同级目录，`--full-depth` 用于发现这些入口。首次运行需要 Node.js 和网络访问：
 
 ```bash
 npx -y skills add MrTang-Yuhan/chinese-code-comment-skill --full-depth --skill '*' --agent codex --copy --yes
@@ -57,7 +57,7 @@ npx -y skills add MrTang-Yuhan/chinese-code-comment-skill --full-depth --skill '
 ```bash
 CODEX_HOME=${CODEX_HOME:-$HOME/.codex}
 SKILL_INSTALLER="$CODEX_HOME/skills/.system/skill-installer/scripts/install-skill-from-github.py"
-python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path . --name chinese-code-comment-skill
+python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path skills/chinese-code-comment-skill --name chinese-code-comment-skill
 python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path skills/chinese-code-comment-translate
 python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path skills/chinese-code-comment-enrich
 python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path skills/chinese-code-comment-style
@@ -76,6 +76,8 @@ python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path 
 也可以从 GitHub 下载后，把四个包含 `SKILL.md` 的目录分别注册到工具的 skill 目录；不要只注册 README，也不要把四个目录再套一层同名目录。
 
 完成安装或更新后刷新 skill 索引或重新开始 Codex 会话。当前已安装目录存在时，安装脚本会拒绝覆盖；更新时应在保留本地修改的前提下重新复制对应目录，或按工具提供的 skill 更新流程执行。
+
+如果此前使用旧版流程把整个仓库安装到 `chinese-code-comment-skill` 目录，请先备份并移除旧的四个安装目标，再按新版流程重新安装；否则旧目录中的嵌套 `skills/*/SKILL.md` 仍会被索引。不要把旧的整仓库目录和新版的四个同级目录混用。
 
 ## 调用示例
 
@@ -106,7 +108,7 @@ python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path 
 
 ## 原始 skill 内容
 
-- 综合入口：[SKILL.md](SKILL.md)
+- 综合入口：[skills/chinese-code-comment-skill/SKILL.md](skills/chinese-code-comment-skill/SKILL.md)
 - 翻译入口：[skills/chinese-code-comment-translate/SKILL.md](skills/chinese-code-comment-translate/SKILL.md)
 - 注释增强入口：[skills/chinese-code-comment-enrich/SKILL.md](skills/chinese-code-comment-enrich/SKILL.md)
 - 规范整理入口：[skills/chinese-code-comment-style/SKILL.md](skills/chinese-code-comment-style/SKILL.md)
@@ -120,7 +122,7 @@ python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path 
 
 ```bash
 VALIDATOR=/home/tang/.codex/skills/.system/skill-creator/scripts/quick_validate.py
-python "$VALIDATOR" .
+python "$VALIDATOR" skills/chinese-code-comment-skill
 python "$VALIDATOR" skills/chinese-code-comment-translate
 python "$VALIDATOR" skills/chinese-code-comment-enrich
 python "$VALIDATOR" skills/chinese-code-comment-style
