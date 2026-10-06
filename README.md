@@ -41,8 +41,8 @@ chinese-code-comment-skill/
 1. **读取并识别入口**：读取仓库根目录的 `README.md`，检查 `skills/*/SKILL.md`，识别四个可独立发现的入口：`skills/chinese-code-comment-skill/SKILL.md` 对应综合入口，以及同级的 `skills/chinese-code-comment-translate/SKILL.md`、`skills/chinese-code-comment-enrich/SKILL.md`、`skills/chinese-code-comment-style/SKILL.md` 三个子入口。默认安装四个入口；只有用户明确指定某个入口时才缩小范围。`chinese-code-comment-enrich/references/multilingual-examples.md` 是增强入口必须保留的资源。
 2. **检查当前 Harness**：识别当前 Harness 的官方 skill/plugin 安装器、默认作用域、已安装目录和同名条目。优先使用 Harness 原生安装流程；不要同时通过插件和手工复制重复安装，也不要把 README 注册成 skill。若安装器支持 dry-run，先检查目标路径和冲突。
 3. **执行安装**：按 Harness 默认作用域安装四个入口；用户明确指定项目级或用户级时遵循用户指定作用域。四个入口都位于 `skills/` 下的同级目录，必须分别安装到 `<skills-directory>/<skill-name>/`，每个目标目录直接包含对应的 `SKILL.md`，并保留入口目录中的相对资源。不要安装仓库根目录，也不要把四个入口套进一个额外的仓库目录；这样可以避免递归扫描时把一个入口的嵌套 `SKILL.md` 重复注册。Claude Code 使用其当前版本支持的 skills 路径（项目级通常为 `.claude/skills/<skill-name>/`，用户级通常为 `~/.claude/skills/<skill-name>/`）；本仓库没有 `.claude-plugin/plugin.json`，不应按插件 manifest 安装。
-4. **处理冲突**：不要覆盖已有本地修改。目标已存在时，按 Harness 的安全更新流程比较、跳过或更新，并记录冲突；不能安全处理时保留现状并向用户报告。
-5. **验证并反馈**：刷新 skill 索引或重新启动会话，实际验证四个名称都可发现和调用；向用户报告使用的安装方式、实际目标路径、已安装入口和未完成项。
+4. **处理冲突和更新**：安装与更新都以四个入口目录为单位；`<skills-directory>` 只保存已安装的 skill，不是 Git 工作树。不要把仓库克隆、解压或 `git pull` 到 `<skills-directory>` 或任何已安装 skill 的目录中，否则仓库内的其他 `SKILL.md` 会被递归扫描并造成重复。Codex 原生安装器在目标目录已存在时会拒绝覆盖；更新时应先把四个 `skills/<name>/` 入口下载到临时目录，逐项比较并保留本地修改，再同步到对应的四个目标目录。使用 Skills CLI 安装的副本应使用其 `update` 流程，不要再用另一种方式重复安装。
+5. **验证并反馈**：清理旧版整仓库安装目录后，再刷新 skill 索引或重新启动会话；实际验证四个名称都可发现且每个名称只有一个路径。向用户报告使用的安装方式、实际目标路径、更新冲突和未完成项。
 
 当 Harness 原生安装器不可用而支持 [Skills CLI](https://github.com/vercel-labs/skills) 时，Agent 可以自动执行下面的回退命令；当前 Harness 为 Claude Code 时把 `--agent codex` 改为 `--agent claude-code`，仓库链接指向 fork 时替换仓库地址，并按目标作用域增加或去掉 `--global`。四个入口位于 `skills/` 下的同级目录，`--full-depth` 用于发现这些入口。首次运行需要 Node.js 和网络访问：
 
@@ -75,9 +75,39 @@ python "$SKILL_INSTALLER" --repo MrTang-Yuhan/chinese-code-comment-skill --path 
 
 也可以从 GitHub 下载后，把四个包含 `SKILL.md` 的目录分别注册到工具的 skill 目录；不要只注册 README，也不要把四个目录再套一层同名目录。
 
-完成安装或更新后刷新 skill 索引或重新开始 Codex 会话。当前已安装目录存在时，安装脚本会拒绝覆盖；更新时应在保留本地修改的前提下重新复制对应目录，或按工具提供的 skill 更新流程执行。
+从 GitHub 拉取仓库本身只会更新源码副本，不会自动更新 `$CODEX_HOME/skills` 中的已安装 skill；拉取后仍须按下面的更新流程同步。完成安装或更新后刷新 skill 索引或重新开始 Codex 会话。
 
-如果此前使用旧版流程把整个仓库安装到 `chinese-code-comment-skill` 目录，请先备份并移除旧的四个安装目标，再按新版流程重新安装；否则旧目录中的嵌套 `skills/*/SKILL.md` 仍会被索引。不要把旧的整仓库目录和新版的四个同级目录混用。
+如果此前使用旧版流程把整个仓库安装到 `chinese-code-comment-skill` 目录，请先备份并移出 `$CODEX_HOME/skills/chinese-code-comment-skill/` 及其余三个旧的顶层子 skill 目录，再按新版流程重新安装；否则旧目录中的嵌套 `skills/*/SKILL.md` 仍会被索引。不要把旧的整仓库目录和新版的四个同级目录混用。
+
+如果 Skills CLI 的旧锁文件仍把综合入口记录为仓库根目录的 `SKILL.md`，也不要直接执行更新；先按实际作用域移除旧记录（例如 `npx -y skills remove -g chinese-code-comment-skill -y`），再使用新版四入口命令重新安装。
+
+### 更新已有安装
+
+更新时不要在 `$CODEX_HOME/skills` 下执行 `git clone` 或 `git pull`。对于 Codex 原生安装器，先使用临时目标目录下载四个入口，确认差异后再逐项同步；安装器本身不会覆盖已有目标：
+
+```bash
+CODEX_HOME=${CODEX_HOME:-$HOME/.codex}
+SKILL_INSTALLER="$CODEX_HOME/skills/.system/skill-installer/scripts/install-skill-from-github.py"
+STAGE=$(mktemp -d)
+python "$SKILL_INSTALLER" --dest "$STAGE" --repo MrTang-Yuhan/chinese-code-comment-skill \
+  --path skills/chinese-code-comment-skill \
+         skills/chinese-code-comment-translate \
+         skills/chinese-code-comment-enrich \
+         skills/chinese-code-comment-style
+```
+
+逐项比较 `$STAGE/<skill-name>` 与 `$CODEX_HOME/skills/<skill-name>`，确认并保留本地修改后，再把临时目录中的四个入口同步到对应目标；不要把 `$STAGE` 或仓库目录放进 `$CODEX_HOME/skills`。如果使用 Skills CLI 安装，则只更新这四个入口：`npx -y skills update --global --yes chinese-code-comment-skill chinese-code-comment-enrich chinese-code-comment-style chinese-code-comment-translate`（项目安装把 `--global` 改为 `--project`），不要把 `skills add` 当作更新，也不要同时执行原生安装器。
+
+原生安装器没有覆盖更新模式，不能用 `cp -r` 把新目录合并到旧目录；需要先备份并移除待更新的目标目录，再从 `$STAGE` 完整复制对应入口。全局和项目作用域也不要同时安装这四个入口，否则 Harness 可能从两个作用域发现同名 skill。
+
+更新完成后，确认 `$CODEX_HOME/skills` 下针对本仓库只存在四个入口目录，并检查是否残留旧版嵌套入口：
+
+```bash
+find "$CODEX_HOME/skills" -type f -path '*/chinese-code-comment-*/SKILL.md' -print
+find "$CODEX_HOME/skills/chinese-code-comment-skill/skills" -type f -name SKILL.md -print 2>/dev/null
+```
+
+第二条命令应没有输出；如果有输出，说明旧版整仓库目录仍在被扫描，应先备份本地修改，再将该旧目录移出 `$CODEX_HOME/skills`，最后重新加载 skill 索引。
 
 ## 调用示例
 
